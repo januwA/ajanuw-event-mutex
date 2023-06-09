@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <button type="button" id="EventMutex">EventMutex</button>
+  <script src="./dist/umd/ajanuw-event-mutex.js"></script>
+  <script>
+    const { Mutex, EventMutex } = AjanuwEventMutex;
+    {
+      const m = new EventMutex((e) => {
+        console.log(e);
+        setTimeout(m.unlock, 1000);
+      }, false);
+      document.querySelector("#EventMutex").addEventListener("click", m.listener);
+    }
+  </script>
+</body>
+
+</html>
