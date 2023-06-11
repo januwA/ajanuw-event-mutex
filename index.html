@@ -15,9 +15,9 @@
     {
       const m = new EventMutex((e) => {
         console.log(e);
-        setTimeout(m.unlock, 1000);
+        setTimeout(() => m.unlock(), 1000);
       }, false);
-      document.querySelector("#EventMutex").addEventListener("click", m.listener);
+      document.querySelector("#EventMutex").addEventListener("click", (e) => m.listener(e));
     }
   </script>
 </body>

@@ -14,16 +14,16 @@ export class Mutex implements AbstractMutex {
   }
 
   /**加锁 */
-  lock = () => {
+  lock() {
     this._isLock = true;
     this.lockCallback?.(this._isLock);
-  };
+  }
 
   /**释放锁 */
-  unlock = () => {
+  unlock() {
     this._isLock = false;
     this.lockCallback?.(this._isLock);
-  };
+  }
 
   constructor(public readonly lockCallback?: lockCallback_t) {}
 }
@@ -43,7 +43,7 @@ export class EventMutex extends Mutex {
       Object.prototype.toString.call(cb) === "[object AsyncFunction]";
   }
 
-  listener = (...args: any[]) => {
+  listener(...args: any[]) {
     if (this.isLock) return;
 
     this.lock();
@@ -63,5 +63,5 @@ export class EventMutex extends Mutex {
     }
 
     return res;
-  };
+  }
 }
