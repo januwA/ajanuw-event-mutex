@@ -24,7 +24,7 @@ describe("main", () => {
 });
 
 describe("EventMutex", () => {
-  it("test EventMutex auto", () => {
+  it("test EventMutex sync AutoRelease", () => {
     const m = new EventMutex(() => {
       expect(m.isLock).toBe(true);
       return 1;
@@ -35,17 +35,29 @@ describe("EventMutex", () => {
     expect(m.isLock).toBe(false);
   });
 
-  it("test EventMutex", () => {
-    const m = new EventMutex(() => {
-      expect(m.isLock).toBe(true);
-    }, false);
+  it("test EventMutex async AutoRelease", () => {
+    const m = new EventMutex(async () => {
+      return 1;
+    });
 
     expect(m.isLock).toBe(false);
     m.listener();
     expect(m.isLock).toBe(true);
   });
 
-  it("test EventMutex 2", () => {
+  it("test EventMutex unlock", () => {
+    const m = new EventMutex(() => {
+      return Promise.resolve(1);
+    }, false);
+
+    expect(m.isLock).toBe(false);
+    m.listener();
+    expect(m.isLock).toBe(true);
+    m.unlock();
+    expect(m.isLock).toBe(false);
+  });
+
+  it("test EventMutex unlock 2", () => {
     const m = new EventMutex(() => {
       expect(m.isLock).toBe(true);
       m.unlock();
@@ -56,7 +68,7 @@ describe("EventMutex", () => {
     expect(m.isLock).toBe(false);
   });
 
-  it("test EventMutex async", async () => {
+  it("test EventMutex async/await", async () => {
     const m = new EventMutex(async () => {
       expect(m.isLock).toBe(true);
     });
@@ -66,28 +78,13 @@ describe("EventMutex", () => {
     expect(m.isLock).toBe(false);
   });
 
-  it("test EventMutex promise", () => {
-    const m = new EventMutex<Promise<number>>(() => {
-      return new Promise((r) => {
-        setTimeout(() => {
-          r(1);
-        }, 5000);
-      });
-    });
-
-    expect(m.isLock).toBe(false);
-    m.listener();
-    // 这里会等到promise完成才会自动解锁
-    expect(m.isLock).toBe(true);
-  });
-
   it("test EventMutex result", async () => {
-    let m = new EventMutex<number>(() => {
+    let m = new EventMutex(() => {
       return 1;
     });
     expect(m.listener()).toBe(1);
 
-    let m2 = new EventMutex<number>(() => {
+    let m2 = new EventMutex(() => {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           // resolve(2);
@@ -104,12 +101,12 @@ describe("EventMutex", () => {
       expect(m2.isLock).toBe(false);
     }
 
-    let m3 = new EventMutex<number>(async () => {
+    let m3 = new EventMutex(async () => {
       return 3;
     });
     expect(await m3.listener()).toBe(3);
 
-    let m4 = new EventMutex<number>(async () => {
+    let m4 = new EventMutex(async () => {
       throw "err";
     });
     expect(m4.isLock).toBe(false);

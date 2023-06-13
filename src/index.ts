@@ -40,8 +40,8 @@ export class Mutex<T> implements AbstractMutex<T> {
   }
 }
 
-export class EventMutex<R> extends Mutex<Function> {
-  constructor(cb: Function, public readonly isAutoRelease = true) {
+export class EventMutex<R> extends Mutex<(...args: any[]) => R> {
+  constructor(cb: (...args: []) => R, public readonly isAutoRelease = true) {
     super(cb);
   }
 
@@ -51,19 +51,23 @@ export class EventMutex<R> extends Mutex<Function> {
       throw new Error(`EventMutex listener get lock fail`);
     }
 
-    try {
-      const res = val.get().apply(this, args);
-      if (res instanceof Promise) {
-        return res.finally(() => {
-          if (this.isAutoRelease) this.unlock();
-        }) as R;
-      } else {
-        if (this.isAutoRelease) this.unlock();
-        return res;
+    if (!this.isAutoRelease) {
+      return val.get().apply(this, args);
+    } else {
+      try {
+        const res = val.get().apply(this, args);
+        if (res instanceof Promise) {
+          return res.finally(() => {
+            this.unlock();
+          }) as R;
+        } else {
+          this.unlock();
+          return res;
+        }
+      } catch (error) {
+        this.unlock();
+        throw error;
       }
-    } catch (error) {
-      if (this.isAutoRelease) this.unlock();
-      throw error;
     }
   }
 }

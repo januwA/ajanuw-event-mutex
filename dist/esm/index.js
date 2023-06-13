@@ -35,24 +35,26 @@ export class EventMutex extends Mutex {
         if (!val) {
             throw new Error(`EventMutex listener get lock fail`);
         }
-        try {
-            const res = val.get().apply(this, args);
-            if (res instanceof Promise) {
-                return res.finally(() => {
-                    if (this.isAutoRelease)
-                        this.unlock();
-                });
-            }
-            else {
-                if (this.isAutoRelease)
-                    this.unlock();
-                return res;
-            }
+        if (!this.isAutoRelease) {
+            return val.get().apply(this, args);
         }
-        catch (error) {
-            if (this.isAutoRelease)
+        else {
+            try {
+                const res = val.get().apply(this, args);
+                if (res instanceof Promise) {
+                    return res.finally(() => {
+                        this.unlock();
+                    });
+                }
+                else {
+                    this.unlock();
+                    return res;
+                }
+            }
+            catch (error) {
                 this.unlock();
-            throw error;
+                throw error;
+            }
         }
     }
 }

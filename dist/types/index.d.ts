@@ -16,9 +16,9 @@ export declare class Mutex<T> implements AbstractMutex<T> {
     } | undefined;
     unlock(): void;
 }
-export declare class EventMutex<R> extends Mutex<Function> {
+export declare class EventMutex<R> extends Mutex<(...args: any[]) => R> {
     readonly isAutoRelease: boolean;
-    constructor(cb: Function, isAutoRelease?: boolean);
+    constructor(cb: (...args: []) => R, isAutoRelease?: boolean);
     listener(...args: any[]): R;
 }
 //# sourceMappingURL=index.d.ts.map

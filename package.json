@@ -1,6 +1,6 @@
 {
   "name": "ajanuw-event-mutex",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "event mutex",
   "private": false,
   "main": "./dist/umd/ajanuw-event-mutex.js",
