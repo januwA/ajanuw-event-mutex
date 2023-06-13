@@ -1,3 +1,7 @@
+## 2.0.0 [2023/6/13]
+
+- Now you can modify the value inside the lock
+
 ## 1.1.0 [2023/6/11]
 
 - update

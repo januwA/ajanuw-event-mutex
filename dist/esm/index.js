@@ -4,48 +4,55 @@ export class Mutex {
     get isLock() {
         return this._isLock;
     }
+    constructor(t) {
+        this.t = t;
+        this._isLock = false;
+    }
     lock() {
-        var _a;
+        if (this._isLock)
+            return;
         this._isLock = true;
-        (_a = this.lockCallback) === null || _a === void 0 ? void 0 : _a.call(this, this._isLock);
+        return {
+            get: () => {
+                return this.t;
+            },
+            set: (t) => {
+                this.t = t;
+            },
+        };
     }
     unlock() {
-        var _a;
-        this._isLock = false;
-        (_a = this.lockCallback) === null || _a === void 0 ? void 0 : _a.call(this, this._isLock);
-    }
-    constructor(lockCallback) {
-        this.lockCallback = lockCallback;
         this._isLock = false;
     }
 }
 export class EventMutex extends Mutex {
-    constructor(cb, isAutoRelease = true, lockCallback) {
-        super(lockCallback);
-        this.cb = cb;
+    constructor(cb, isAutoRelease = true) {
+        super(cb);
         this.isAutoRelease = isAutoRelease;
-        this._isAsyncCb = false;
-        if (typeof cb !== "function")
-            throw `cb must be a function`;
-        this._isAsyncCb =
-            Object.prototype.toString.call(cb) === "[object AsyncFunction]";
     }
     listener(...args) {
-        if (this.isLock)
-            return;
-        this.lock();
-        let res = this.cb(...args);
-        if (this.isAutoRelease) {
-            if (this._isAsyncCb) {
-                res = res.then((r) => {
-                    this.unlock();
-                    return r;
+        const val = this.lock();
+        if (!val) {
+            throw new Error(`EventMutex listener get lock fail`);
+        }
+        try {
+            const res = val.get().apply(this, args);
+            if (res instanceof Promise) {
+                return res.finally(() => {
+                    if (this.isAutoRelease)
+                        this.unlock();
                 });
             }
             else {
-                this.unlock();
+                if (this.isAutoRelease)
+                    this.unlock();
+                return res;
             }
         }
-        return res;
+        catch (error) {
+            if (this.isAutoRelease)
+                this.unlock();
+            throw error;
+        }
     }
 }

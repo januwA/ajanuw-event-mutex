@@ -1,22 +1,24 @@
-type lockCallback_t = (isLock: boolean) => void;
-export declare abstract class AbstractMutex {
-    abstract lock(): void;
+export declare abstract class AbstractMutex<T> {
+    abstract lock(): {
+        get(): T;
+        set(t: T): void;
+    } | undefined;
     abstract unlock(): void;
 }
-export declare class Mutex implements AbstractMutex {
-    readonly lockCallback?: lockCallback_t | undefined;
+export declare class Mutex<T> implements AbstractMutex<T> {
+    private t;
     private _isLock;
     get isLock(): boolean;
-    lock(): void;
+    constructor(t: T);
+    lock(): {
+        get: () => T;
+        set: (t: T) => void;
+    } | undefined;
     unlock(): void;
-    constructor(lockCallback?: lockCallback_t | undefined);
 }
-export declare class EventMutex extends Mutex {
-    readonly cb: Function;
+export declare class EventMutex<R> extends Mutex<Function> {
     readonly isAutoRelease: boolean;
-    private _isAsyncCb;
-    constructor(cb: Function, isAutoRelease?: boolean, lockCallback?: lockCallback_t);
-    listener(...args: any[]): any;
+    constructor(cb: Function, isAutoRelease?: boolean);
+    listener(...args: any[]): R;
 }
-export {};
 //# sourceMappingURL=index.d.ts.map

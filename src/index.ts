@@ -1,11 +1,14 @@
-type lockCallback_t = (isLock: boolean) => void;
-
-export abstract class AbstractMutex {
-  abstract lock(): void;
+export abstract class AbstractMutex<T> {
+  abstract lock():
+    | {
+        get(): T;
+        set(t: T): void;
+      }
+    | undefined;
   abstract unlock(): void;
 }
 
-export class Mutex implements AbstractMutex {
+export class Mutex<T> implements AbstractMutex<T> {
   /**锁状态 */
   private _isLock = false;
 
@@ -13,55 +16,54 @@ export class Mutex implements AbstractMutex {
     return this._isLock;
   }
 
-  /**加锁 */
+  constructor(private t: T) {}
+
+  /**获取锁 */
   lock() {
+    if (this._isLock) return;
+
     this._isLock = true;
-    this.lockCallback?.(this._isLock);
+
+    return {
+      get: () => {
+        return this.t;
+      },
+      set: (t: T) => {
+        this.t = t;
+      },
+    };
   }
 
   /**释放锁 */
   unlock() {
     this._isLock = false;
-    this.lockCallback?.(this._isLock);
   }
-
-  constructor(public readonly lockCallback?: lockCallback_t) {}
 }
 
-export class EventMutex extends Mutex {
-  private _isAsyncCb = false;
-
-  constructor(
-    public readonly cb: Function,
-    public readonly isAutoRelease = true,
-    lockCallback?: lockCallback_t
-  ) {
-    super(lockCallback);
-    if (typeof cb !== "function") throw `cb must be a function`;
-
-    this._isAsyncCb =
-      Object.prototype.toString.call(cb) === "[object AsyncFunction]";
+export class EventMutex<R> extends Mutex<Function> {
+  constructor(cb: Function, public readonly isAutoRelease = true) {
+    super(cb);
   }
 
-  listener(...args: any[]) {
-    if (this.isLock) return;
-
-    this.lock();
-
-    let res = this.cb(...args);
-
-    // 自动释放锁?
-    if (this.isAutoRelease) {
-      if (this._isAsyncCb) {
-        res = res.then((r: any) => {
-          this.unlock();
-          return r;
-        });
-      } else {
-        this.unlock();
-      }
+  listener(...args: any[]): R {
+    const val = this.lock();
+    if (!val) {
+      throw new Error(`EventMutex listener get lock fail`);
     }
 
-    return res;
+    try {
+      const res = val.get().apply(this, args);
+      if (res instanceof Promise) {
+        return res.finally(() => {
+          if (this.isAutoRelease) this.unlock();
+        }) as R;
+      } else {
+        if (this.isAutoRelease) this.unlock();
+        return res;
+      }
+    } catch (error) {
+      if (this.isAutoRelease) this.unlock();
+      throw error;
+    }
   }
 }

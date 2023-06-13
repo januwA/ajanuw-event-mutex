@@ -9,15 +9,27 @@
 
 <body>
   <button type="button" id="EventMutex">EventMutex</button>
+  <button type="button" id="AsyncEventMutex">AsyncEventMutex</button>
   <script src="./dist/umd/ajanuw-event-mutex.js"></script>
   <script>
     const { Mutex, EventMutex } = AjanuwEventMutex;
     {
       const m = new EventMutex((e) => {
         console.log(e);
-        setTimeout(() => m.unlock(), 1000);
-      }, false);
+        // throw '123'
+      });
+
+      const m2 = new EventMutex(async (e) => {
+        console.log(e);
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            resolve();
+          }, 3000);
+        })
+        // throw '123'
+      });
       document.querySelector("#EventMutex").addEventListener("click", (e) => m.listener(e));
+      document.querySelector("#AsyncEventMutex").addEventListener("click", (e) => m2.listener(e));
     }
   </script>
 </body>
